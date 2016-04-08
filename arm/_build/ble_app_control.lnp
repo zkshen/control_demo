@@ -1,8 +1,8 @@
 --cpu Cortex-M0
 ".\_build\main.o"
+".\_build\led.o"
 ".\_build\ble_srv_common.o"
-".\_build\ble_fan_control.o"
-".\_build\ble_hum_control.o"
+".\_build\ble_control.o"
 ".\_build\ble_error_log.o"
 ".\_build\pstorage.o"
 ".\_build\crc16.o"

@@ -52,7 +52,7 @@
 .\_build\main.o: ..\Include\ble\ble_debug_assert_handler.h
 .\_build\main.o: ..\Include\app_common\pstorage.h
 .\_build\main.o: ..\pstorage_platform.h
-.\_build\main.o: ..\ble_fan_control.h
-.\_build\main.o: ..\ble_hum_control.h
+.\_build\main.o: ..\ble_control.h
+.\_build\main.o: ..\led.h
 .\_build\main.o: ..\SEGGER_RTT.h
 .\_build\main.o: ..\SEGGER_RTT_Conf.h

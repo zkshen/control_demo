@@ -380,6 +380,11 @@
               <FileType>1</FileType>
               <FilePath>.\..\main.c</FilePath>
             </File>
+            <File>
+              <FileName>led.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\led.c</FilePath>
+            </File>
           </Files>
         </Group>
         <Group>
@@ -391,14 +396,9 @@
               <FilePath>..\Source\ble\ble_services\ble_srv_common.c</FilePath>
             </File>
             <File>
-              <FileName>ble_fan_control.c</FileName>
+              <FileName>ble_control.c</FileName>
               <FileType>1</FileType>
-              <FilePath>..\ble_fan_control.c</FilePath>
-            </File>
-            <File>
-              <FileName>ble_hum_control.c</FileName>
-              <FileType>1</FileType>
-              <FilePath>..\ble_hum_control.c</FilePath>
+              <FilePath>..\ble_control.c</FilePath>
             </File>
           </Files>
         </Group>
@@ -853,6 +853,11 @@
               <FileType>1</FileType>
               <FilePath>.\..\main.c</FilePath>
             </File>
+            <File>
+              <FileName>led.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\led.c</FilePath>
+            </File>
           </Files>
         </Group>
         <Group>
@@ -864,14 +869,9 @@
               <FilePath>..\Source\ble\ble_services\ble_srv_common.c</FilePath>
             </File>
             <File>
-              <FileName>ble_fan_control.c</FileName>
+              <FileName>ble_control.c</FileName>
               <FileType>1</FileType>
-              <FilePath>..\ble_fan_control.c</FilePath>
-            </File>
-            <File>
-              <FileName>ble_hum_control.c</FileName>
-              <FileType>1</FileType>
-              <FilePath>..\ble_hum_control.c</FilePath>
+              <FilePath>..\ble_control.c</FilePath>
             </File>
           </Files>
         </Group>

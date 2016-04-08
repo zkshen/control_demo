@@ -19,8 +19,8 @@
 #include "app_button.h"
 #include "ble_debug_assert_handler.h"
 #include "pstorage.h"
-#include "ble_fan_control.h"
-#include "ble_hum_control.h"
+#include "ble_control.h"
+#include "led.h"
 #include "SEGGER_RTT.h" 
 
 #define IS_SRVC_CHANGED_CHARACT_PRESENT 0                                           /**< Include or not the service_changed characteristic. if not enabled, the server's database cannot be changed for the lifetime of the device*/
@@ -59,9 +59,7 @@
 
 static ble_gap_sec_params_t             m_sec_params;                               /**< Security requirements for this application. */
 static uint16_t                         m_conn_handle = BLE_CONN_HANDLE_INVALID;    /**< Handle of the current connection. */
-static ble_fan_control_t                fan_control;
-static ble_hum_control_t                hum_control;
-static uint8_t                          fan_state = 0;
+static ble_control_t                control;
 static uint8_t                          hum_state = 0;
 
 #define SCHED_MAX_EVENT_DATA_SIZE       sizeof(app_timer_event_t)                   /**< Maximum size of scheduler events. Note that scheduler BLE stack events do not contain any data, as the events are being pulled from the stack in the event handler. */
@@ -148,40 +146,24 @@ static void advertising_init(void)
 	ble_advdata_t scanrsp;
 	uint8_t flags = BLE_GAP_ADV_FLAGS_LE_ONLY_LIMITED_DISC_MODE;
 
-	ble_uuid_t adv_uuid1[] = {{FAN_CONTROL_UUID_SERVICE, fan_control.uuid_type},};
 	// Build and set advertising data
 	memset(&advdata, 0, sizeof(advdata));
 	advdata.name_type = BLE_ADVDATA_FULL_NAME;
 	advdata.include_appearance = true;
 	advdata.flags.size = sizeof(flags);
 	advdata.flags.p_data = &flags;
-	scanrsp.uuids_complete.uuid_cnt = sizeof(adv_uuid1) / sizeof(adv_uuid1[0]);
-	scanrsp.uuids_complete.p_uuids = adv_uuid1;						 
-	ble_uuid_t adv_uuid2[] = {{HUM_CONTROL_UUID_SERVICE, hum_control.uuid_type}};
+					 
+	ble_uuid_t adv_uuid[] = {{CONTROL_UUID_SERVICE, control.uuid_type}};
 							 
 	memset(&scanrsp, 0, sizeof(scanrsp));
-	scanrsp.uuids_complete.uuid_cnt = sizeof(adv_uuid2) / sizeof(adv_uuid2[0]);
-	scanrsp.uuids_complete.p_uuids = adv_uuid2;
+	scanrsp.uuids_complete.uuid_cnt = sizeof(adv_uuid) / sizeof(adv_uuid[0]);
+	scanrsp.uuids_complete.p_uuids = adv_uuid;
 	err_code = ble_advdata_set(&advdata, &scanrsp);
 
 	APP_ERROR_CHECK(err_code);
 }
 
-static void fan_control_write_handler(ble_fan_control_t * p_fan_control, uint8_t order_state)
-{
-    if (order_state)
-    {
-        nrf_gpio_pin_set(LED_0);
-		fan_state = 1;
-    }
-    else
-    {
-        nrf_gpio_pin_clear(LED_0);
-		fan_state = 0;
-    }
-}
-
-static void hum_control_write_handler(ble_hum_control_t * p_hum_control, uint8_t order_state)
+static void control_write_handler(ble_control_t * p_control, uint8_t order_state)
 {
     if (order_state)
     {
@@ -198,15 +180,11 @@ static void hum_control_write_handler(ble_hum_control_t * p_hum_control, uint8_t
 static void services_init(void)
 {
     uint32_t err_code;
-    ble_fan_control_init_t init_fan;
-    ble_hum_control_init_t init_hum;
+    ble_control_init_t init_hum;
 	
-    init_fan.fan_control_write_handler = fan_control_write_handler;
-	init_hum.hum_control_write_handler = hum_control_write_handler;
+	init_hum.control_write_handler = control_write_handler;
     
-    err_code = ble_fan_control_init(&fan_control, &init_fan);
-    APP_ERROR_CHECK(err_code);
-	err_code = ble_hum_control_init(&hum_control, &init_hum);
+	err_code = ble_control_init(&control, &init_hum);
     APP_ERROR_CHECK(err_code);
 }
 
@@ -273,6 +251,7 @@ static void advertising_start(void)
 
     err_code = sd_ble_gap_adv_start(&adv_params);
     APP_ERROR_CHECK(err_code);
+	led_start();
 }
 
 static void on_ble_evt(ble_evt_t * p_ble_evt)
@@ -287,12 +266,15 @@ static void on_ble_evt(ble_evt_t * p_ble_evt)
             m_conn_handle = p_ble_evt->evt.gap_evt.conn_handle;
 			err_code = app_button_enable();
             APP_ERROR_CHECK(err_code);
+			led_stop();
+			nrf_gpio_pin_set(LED_0);
             break;
 
         case BLE_GAP_EVT_DISCONNECTED:
             m_conn_handle = BLE_CONN_HANDLE_INVALID;
 			err_code = app_button_disable();
             APP_ERROR_CHECK(err_code);
+			nrf_gpio_pin_clear(LED_0);
             advertising_start();
             break;
 
@@ -330,6 +312,7 @@ static void on_ble_evt(ble_evt_t * p_ble_evt)
         case BLE_GAP_EVT_TIMEOUT:
             if (p_ble_evt->evt.gap_evt.params.timeout.src == BLE_GAP_TIMEOUT_SRC_ADVERTISEMENT)
             {
+				led_stop();
                 advertising_start();
             }
             break;
@@ -344,8 +327,7 @@ static void ble_evt_dispatch(ble_evt_t * p_ble_evt)
 {
     on_ble_evt(p_ble_evt);
     ble_conn_params_on_ble_evt(p_ble_evt);
-	ble_fan_control_on_ble_evt(&fan_control, p_ble_evt);
-	ble_hum_control_on_ble_evt(&hum_control, p_ble_evt);
+	ble_control_on_ble_evt(&control, p_ble_evt);
 }
 
 static void sys_evt_dispatch(uint32_t sys_evt)
@@ -387,15 +369,10 @@ static void button_event_handler(uint8_t pin_no, uint8_t button_event)
     {
         switch (pin_no)
         {
-            case BUTTON_0:
-				nrf_gpio_pin_toggle(LED_0);
-				fan_state = !fan_state;
-				ble_fan_control_state_send(&fan_control, fan_state);
-				break;
 			case BUTTON_1:
 				nrf_gpio_pin_toggle(LED_1);
 				hum_state = !hum_state;
-				ble_hum_control_state_send(&hum_control, hum_state);
+				ble_control_state_send(&control, hum_state);
 				break;
             default:
                 APP_ERROR_HANDLER(pin_no);
